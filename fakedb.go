@@ -56,20 +56,20 @@ type fakeDriver struct {
 	dbs        map[string]*fakeDB
 }
 
-type fakeConnector struct {
+type FakeConnector struct {
 	name string
 
 	waiter func(context.Context)
 }
 
-func (c *fakeConnector) Connect(context.Context) (driver.Conn, error) {
-	conn, err := fdriver.Open(c.name)
+func (c *FakeConnector) Connect(context.Context) (driver.Conn, error) {
+	conn, err := Fdriver.Open(c.name)
 	conn.(*fakeConn).waiter = c.waiter
 	return conn, err
 }
 
-func (c *fakeConnector) Driver() driver.Driver {
-	return fdriver
+func (c *FakeConnector) Driver() driver.Driver {
+	return Fdriver
 }
 
 type fakeDriverCtx struct {
@@ -79,7 +79,7 @@ type fakeDriverCtx struct {
 var _ driver.DriverContext = &fakeDriverCtx{}
 
 func (cc *fakeDriverCtx) OpenConnector(name string) (driver.Connector, error) {
-	return &fakeConnector{name: name}, nil
+	return &FakeConnector{name: name}, nil
 }
 
 type fakeDB struct {
@@ -190,10 +190,10 @@ type fakeStmt struct {
 	placeholderConverter []driver.ValueConverter // used by INSERT
 }
 
-var fdriver driver.Driver = &fakeDriver{}
+var Fdriver driver.Driver = &fakeDriver{}
 
 func init() {
-	sql.Register("test", fdriver)
+	sql.Register("test", Fdriver)
 }
 
 func contains(list []string, y string) bool {
@@ -211,7 +211,7 @@ type Dummy struct {
 
 func TestDrivers(t *testing.T) {
 	//sql.unregisterAllDrivers() - TODO not export!
-	sql.Register("test", fdriver)
+	sql.Register("test", Fdriver)
 	sql.Register("invalid", Dummy{})
 	all := sql.Drivers()
 	if len(all) < 2 || !sort.StringsAreSorted(all) || !contains(all, "test") || !contains(all, "invalid") {
@@ -401,7 +401,7 @@ func (c *fakeConn) ResetSession(ctx context.Context) error {
 }
 
 func (c *fakeConn) Close() (err error) {
-	drv := fdriver.(*fakeDriver)
+	drv := Fdriver.(*fakeDriver)
 	defer func() {
 		if err != nil && testStrictClose != nil {
 			testStrictClose.Errorf("failed to close a test fakeConn: %v", err)
